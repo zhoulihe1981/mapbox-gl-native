@@ -13,7 +13,7 @@
 #import "NSData+MGLAdditions.h"
 #import "MGLLoggingConfiguration_Private.h"
 
-#if TARGET_OS_IPHONE || TARGET_OS_SIMULATOR
+#if TARGET_OS_IOS
 #import "MMEConstants.h"
 #import "MGLMapboxEvents.h"
 #endif
@@ -371,7 +371,7 @@ const MGLExceptionName MGLUnsupportedRegionTypeException = @"MGLUnsupportedRegio
             completion(pack, error);
         }
             
-        #if TARGET_OS_IPHONE || TARGET_OS_SIMULATOR
+        #if TARGET_OS_IOS
             NSMutableDictionary *offlineDownloadStartEventAttributes = [NSMutableDictionary dictionaryWithObject:MMEventTypeOfflineDownloadStart forKey:MMEEventKeyEvent];
         
             if ([region conformsToProtocol:@protocol(MGLOfflineRegion_Private)]) {
