@@ -282,6 +282,18 @@ TEST(Map, ProjectionMode) {
     EXPECT_EQ(*options.ySkew, 0.0);
 }
 
+TEST(Map, BoundOptions) {
+    MapTest<> test;
+
+    LatLngBounds llb = LatLngBounds::hull({-10, -10}, {10, 10});
+    test.map.setBounds(BoundOptions().withMinZoom(4).withMaxZoom(10).withLatLngBounds(llb));
+    auto bounds = test.map.getBounds();
+
+    EXPECT_EQ(*bounds.minZoom, 4);
+    EXPECT_EQ(*bounds.maxZoom, 10);
+    EXPECT_EQ(*bounds.bounds, llb);
+}
+
 TEST(Map, SetStyleInvalidJSON) {
     Log::setObserver(std::make_unique<FixtureLogObserver>());
 
