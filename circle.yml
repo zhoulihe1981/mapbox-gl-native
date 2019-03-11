@@ -15,6 +15,8 @@ workflows:
       - android-arm-v7-template:
           name: android-gnustl-arm-v7
           stl: gnustl_shared
+          firebase_device_id: Nexus4
+          firebase_device_os: "19"
           image: android-ndk-r17c:1d5db0eb34
       - android-release:
           filters:
@@ -312,19 +314,6 @@ commands:
             gcloud auth activate-service-account --key-file secret.json --project android-gl-native
             rm secret.json
           fi
-  run-android-instrumentation-tests:
-    steps:
-    - run:
-        name: Run instrumentation tests on Firebase
-        no_output_timeout: 20m
-        command: |
-          if [[ -n "${GCLOUD_SERVICE_ACCOUNT_JSON}" && -z "${SKIP_FIREBASE:-}" ]]; then
-            gcloud firebase test android models list
-            gcloud firebase test android run --type instrumentation \
-              --app platform/android/MapboxGLAndroidSDKTestApp/build/outputs/apk/debug/MapboxGLAndroidSDKTestApp-debug.apk \
-              --test platform/android/MapboxGLAndroidSDKTestApp/build/outputs/apk/androidTest/debug/MapboxGLAndroidSDKTestApp-debug-androidTest.apk \
-              --device-ids sailfish --os-version-ids 26 --locales en --orientations portrait --timeout 20m
-          fi
 
 
   install-ios-packaging-dependencies:
@@ -522,6 +511,12 @@ jobs:
       image:
         type: string
         default: android-ndk-r19:8e91a7ebab
+      firebase_device_id:
+        type: string
+        default: sailfish
+      firebase_device_os:
+        type: string
+        default: "26"
     docker:
       - image: mbgl/<< parameters.image >>
     resource_class: xlarge
@@ -565,7 +560,16 @@ jobs:
       - save-dependencies: { gradle: true }
       - conditionally-skip-firebase
       - login-google-cloud-platform
-      - run-android-instrumentation-tests
+      - run:
+          name: run instrumentation tests on Firebase
+          command: |
+            if [[ -n "${GCLOUD_SERVICE_ACCOUNT_JSON}" && -z "${SKIP_FIREBASE:-}" ]]; then
+              gcloud firebase test android models list
+              gcloud firebase test android run --type instrumentation \
+                --app platform/android/MapboxGLAndroidSDKTestApp/build/outputs/apk/debug/MapboxGLAndroidSDKTestApp-debug.apk \
+                --test platform/android/MapboxGLAndroidSDKTestApp/build/outputs/apk/androidTest/debug/MapboxGLAndroidSDKTestApp-debug-androidTest.apk \
+                --device-ids  << parameters.firebase_device_id >> --os-version-ids << parameters.firebase_device_os >> --locales en --orientations portrait --timeout 20m
+            fi
       - run:
           name: gzip debugable .so files
           command: |
@@ -972,10 +976,10 @@ jobs:
       - run:
           name: Trigger metrics
           command: |
-            if [[ $CIRCLE_BRANCH == master ]]; then 
+            if [[ $CIRCLE_BRANCH == master ]]; then
               if [ -n "${MOBILE_METRICS_TOKEN}" ]; then
                 curl -u $MOBILE_METRICS_TOKEN -d build_parameters[CIRCLE_JOB]=ios-maps-benchmark https://circleci.com/api/v1.1/project/github/mapbox/mobile-metrics/tree/master
-              else 
+              else
                 echo "MOBILE_METRICS_TOKEN not provided"
               fi
             fi
